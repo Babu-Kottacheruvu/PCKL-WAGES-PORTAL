@@ -17,6 +17,8 @@ export const AttendanceManagement = () => {
   const [activeTab, setActiveTab] = useState<Tab>('daily');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedDivision, setSelectedDivision] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
   // Daily Entry State
   const [records, setRecords] = useState<AttendanceRecord[]>(mockAttendanceRecords);
@@ -54,9 +56,10 @@ export const AttendanceManagement = () => {
     return records.filter(r => {
       const matchDate = r.date === selectedDate;
       const matchDivision = selectedDivision === 'All' || r.division === selectedDivision;
-      return matchDate && matchDivision;
+      const matchSearch = r.workerName.toLowerCase().includes(searchQuery.toLowerCase()) || r.workerId.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchDate && matchDivision && matchSearch;
     });
-  }, [records, selectedDate, selectedDivision]);
+  }, [records, selectedDate, selectedDivision, searchQuery]);
 
   // Pattern detection (e.g., 3+ consecutive absences)
   const patternAlerts = useMemo(() => {
@@ -149,6 +152,8 @@ export const AttendanceManagement = () => {
                 <input
                   type="text"
                   placeholder="Search by ID or Name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 w-full border-gray-300 rounded-lg focus:ring-[#137f79] focus:border-[#137f79]"
                 />
               </div>
@@ -208,7 +213,15 @@ export const AttendanceManagement = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredDailyRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={record.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).tagName !== 'INPUT' && (e.target as HTMLElement).tagName !== 'SELECT') {
+                          setSelectedRecord(record);
+                        }
+                      }}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
@@ -401,6 +414,85 @@ export const AttendanceManagement = () => {
         </div>
       )}
 
+
+      {/* Employee Details & Mark Attendance Modal */}
+      {selectedRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">Employee Details</h3>
+              <button 
+                onClick={() => setSelectedRecord(null)} 
+                className="text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-[#137f79]/10 rounded-full flex items-center justify-center text-[#137f79] text-2xl font-bold">
+                  {selectedRecord.workerName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900">{selectedRecord.workerName}</h4>
+                  <p className="text-sm text-gray-500 font-medium">{selectedRecord.workerId} &middot; {selectedRecord.role}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div>
+                  <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Division</span>
+                  <span className="font-semibold text-gray-900">{selectedRecord.division}</span>
+                </div>
+                <div>
+                  <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Field</span>
+                  <span className="font-semibold text-gray-900">{selectedRecord.field}</span>
+                </div>
+                <div>
+                  <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Date</span>
+                  <span className="font-semibold text-gray-900">{selectedRecord.date}</span>
+                </div>
+                <div>
+                  <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Linked Record</span>
+                  <span className="font-semibold text-[#137f79]">{selectedRecord.linkedTappingRecordId || 'N/A'}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-3">Mark Attendance Status</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Present', 'Absent', 'Half-Day', 'Holiday', 'Weekly Off', 'Sick Leave'].map(status => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setRecords(prev => prev.map(r => r.id === selectedRecord.id ? { ...r, status: status as AttendanceStatus } : r));
+                        setSelectedRecord(prev => prev ? { ...prev, status: status as AttendanceStatus } : null);
+                      }}
+                      className={`py-2 px-2 text-xs font-semibold rounded-lg border transition-all ${
+                        selectedRecord.status === status 
+                        ? 'bg-[#137f79] text-white border-[#137f79] shadow-md scale-105' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 flex justify-end bg-gray-50">
+              <button 
+                onClick={() => setSelectedRecord(null)} 
+                className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
