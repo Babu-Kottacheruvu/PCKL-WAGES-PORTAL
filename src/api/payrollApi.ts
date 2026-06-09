@@ -4,18 +4,19 @@ import { utils, write } from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
-  earningsHeads,
-  workerEarnings,
-  advanceRecoveries,
-  welfareFundRecords,
-  electricityChargeRecords,
-  adHocDeductions,
-  payrollDashboardMetrics,
-  earningsDistribution,
-  deductionDistribution,
-  payrollTrend,
-  recoveryTrend,
+  initialEarningsHeads,
+  initialWorkers,
+  initialAdvances,
+  initialWelfare,
+  initialElectricity,
+  initialDeductions,
 } from '../data/earningsRecoveriesData';
+
+const payrollDashboardMetrics: any[] = [];
+const earningsDistribution: any[] = [];
+const deductionDistribution: any[] = [];
+const payrollTrend: any[] = [];
+const recoveryTrend: any[] = [];
 
 const client = axios.create({ baseURL: '/api/payroll' });
 
@@ -44,27 +45,27 @@ const exportToPdf = (columns: string[], rows: any[], fileName: string) => {
 export const payrollApi = {
   getEarningsHeads: async () => {
     await delay();
-    return earningsHeads;
+    return initialEarningsHeads;
   },
   getWorkerEarnings: async () => {
     await delay();
-    return workerEarnings;
+    return initialWorkers;
   },
   getAdvanceRecoveries: async () => {
     await delay();
-    return advanceRecoveries;
+    return initialAdvances;
   },
   getWelfareFundRecords: async () => {
     await delay();
-    return welfareFundRecords;
+    return initialWelfare;
   },
   getElectricityChargeRecords: async () => {
     await delay();
-    return electricityChargeRecords;
+    return initialElectricity;
   },
   getAdHocDeductions: async () => {
     await delay();
-    return adHocDeductions;
+    return initialDeductions;
   },
   getDashboardMetrics: async () => {
     await delay();
